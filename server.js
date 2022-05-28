@@ -35,31 +35,32 @@ const loadData = (path) => {
 
 const storeData = (data, path, mode) => {
     try {
-        fs.writeFileSync(path, JSON.stringify(data), { flag: mode })
+        fs.writeFileSync(path, JSON.stringify(data), {flag: mode})
     } catch (err) {
         console.error(err)
     }
 }
-
 
 app.get("/getJSON", (req, res) => {
     let result = loadData("./result/heading.json");
     res.json(JSON.parse(result));
 });
 
-
 app.post("/postJSON", function (request, response) {
     if (!request.body) return response.sendStatus(400);
     let reverse_array = request.body.reverse();
 
-    for (const element of reverse_array) {
-        lastData.push(element.link);
-        if (lastData.length > 100)
-            lastData.shift();
+    if (reverse_array.length !== 0) {
+        for (const element of reverse_array) {
+            lastData.push(element.link);
+            if (lastData.length > 100)
+                lastData.shift();
+        }
+        JSONdata = [...JSONdata, ...reverse_array]
+        storeData(JSONdata, "./result/result.json", "w");
+        storeData(lastData, "./result/heading.json", "w");
     }
 
-    storeData(reverse_array, "./result/result.json", "a");
-    storeData(lastData, "./result/heading.json", "w");
     response.send(request.body);
 });
 
@@ -67,17 +68,16 @@ app.listen(PORT, () => {
     fs.access("./result/result.json", fs.constants.F_OK, (error) => {
         if (error) {
             console.log('result file created');
-            fs.writeFileSync("./result/result.json", '', { flag: 'wx' });
-            fs.writeFileSync("./result/heading.json", '[]', { flag: 'w' });
-        }
-        else {
+            fs.writeFileSync("./result/result.json", '', {flag: 'wx'});
+            fs.writeFileSync("./result/heading.json", '[]', {flag: 'w'});
+        } else {
             console.log('processing last data...');
-            let JSONdata = fs.readFileSync("./result/result.json");
+            JSONdata = fs.readFileSync("./result/result.json");
             if (JSONdata.length !== 0) {
                 JSONdata = JSON.parse(JSONdata);
                 lastData = JSONdata.slice(-100);
                 lastData.forEach((element, i, lastData) => (lastData[i] = element.link))
-                fs.writeFileSync("./result/heading.json", JSON.stringify(lastData), { flag: 'w' });
+                fs.writeFileSync("./result/heading.json", JSON.stringify(lastData), {flag: 'w'});
             }
         }
         console.log('complete!');
